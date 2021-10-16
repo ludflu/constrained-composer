@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -Wall -Werror #-}
 {-# LANGUAGE OverloadedLists #-}
+-- {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Main where
 
@@ -28,6 +28,19 @@ makePairs = listsToPairs . (windows 2)
 absDiff :: SBV Integer -> SBV Integer -> SBV Integer
 absDiff a b = abs (a-b)
 
+diff :: SBV Integer -> SBV Integer -> SBV Integer
+diff a b = a-b
+
+fromSBool :: SBool -> Bool
+fromSBool sFalse = False
+fromSBool sTrue = True
+
+onlyLeaps :: [(SBV Integer, SBV Integer)] -> [(SBV Integer, SBV Integer)]
+onlyLeaps dps = filter (\d -> fromSBool ( abs (fst d) .> 1)) dps
+
+--leaps rebound with a step in the opposite direction
+leapsRebound :: SBV Integer -> SBV Integer -> SBool
+leapsRebound a b = (signum a ./= signum b) .&& (abs b .==1)
 
 --given a list of scale degrees, how many are steps (not leaps)
 numSteps :: SList Integer -> SBV Integer
@@ -52,6 +65,8 @@ vnames = let vs = take 16 ['a'..]
 mkSList :: [SBV Integer] -> SList Integer
 mkSList xs = L.implode xs
 
+
+
 --mphrase :: IO AllSatResult
 mphrase :: IO SatResult
 mphrase = sat $ do
@@ -59,18 +74,23 @@ mphrase = sat $ do
     let isScaleDegree x = x .>= 1 .&& x .<= 7   --scale degrees
         vfirst = head svars
         vlast = last svars
-        _absDiff = uncurry absDiff
+
+        delta = map (uncurry diff) pairs
+        deltaPairs = makePairs delta
+        leaps = onlyLeaps deltaPairs
+
         pairs = makePairs svars
-        steps = map _absDiff pairs
-        delta = mkSList steps
-        stepCount = numSteps delta
-        leapCount = numLeaps delta
-        repeatCount = numRepeats delta
+        adelta = mkSList $ map (uncurry absDiff) pairs
+        stepCount = numSteps adelta
+        leapCount = numLeaps adelta
+        repeatCount = numRepeats adelta
+
     constrain $ sAll isScaleDegree svars
     solve [ stepCount .>= 14, --mostly steps
             leapCount .<= 2 , --some leaps allowed
             repeatCount .<= 1, --no more than 1 repeated note
             vfirst .== 1,  --begin on the tonic
+            sAll (uncurry leapsRebound) leaps, 
             (abs vfirst - abs vlast) .== 0 --end on the tonic
           ]
 
