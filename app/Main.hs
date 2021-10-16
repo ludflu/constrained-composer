@@ -34,10 +34,16 @@ numSteps :: SList Integer -> SBV Integer
 numSteps ss = let steps = bfilter 100 (\x -> (x .== 1)) ss
                in L.length steps
 
---given a list of scale degrees, how many are steps (not leaps)
+--given a list of scale degrees, how many are leaps, not steps
 numLeaps :: SList Integer -> SBV Integer
 numLeaps ss = let steps = bfilter 100 (\x -> (x .> 1)) ss
                in L.length steps
+
+--given a list of scale degrees, how many are repeated notes
+numRepeats :: SList Integer -> SBV Integer
+numRepeats ss = let steps = bfilter 100 (\x -> (x .== 0)) ss
+               in L.length steps
+
 
 vnames :: [String]
 vnames = let vs = take 16 ['a'..]
@@ -59,10 +65,12 @@ mphrase = sat $ do
         delta = mkSList steps
         stepCount = numSteps delta
         leapCount = numLeaps delta
+        repeatCount = numRepeats delta
     constrain $ sAll isScaleDegree svars
     constrain $ stepCount .>= 10
     constrain $ leapCount .<= 2
-    constrain $ vfirst .== 5
+    constrain $ repeatCount .<= 1
+    constrain $ vfirst .== 1
     solve [ (abs vfirst - abs vlast) .== 0 ]
 
 
