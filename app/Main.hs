@@ -57,7 +57,6 @@ numRepeats :: SList Integer -> SBV Integer
 numRepeats ss = let steps = bfilter 100 (\x -> (x .== 0)) ss
                in L.length steps
 
-
 vnames :: [String]
 vnames = let vs = take 16 ['a'..]
           in map (\v -> [v]) vs
@@ -65,11 +64,8 @@ vnames = let vs = take 16 ['a'..]
 mkSList :: [SBV Integer] -> SList Integer
 mkSList xs = L.implode xs
 
-
-
---mphrase :: IO AllSatResult
-mphrase :: IO SatResult
-mphrase = sat $ do
+mphrase :: IO AllSatResult
+mphrase = allSatWith defaultSMTCfg{allSatMaxModelCount = Just 10} $ do
     svars <- mapM sInteger vnames
     let isScaleDegree x = x .>= 1 .&& x .<= 7   --scale degrees
         vfirst = head svars
@@ -93,7 +89,6 @@ mphrase = sat $ do
             vlast .== 1,  --end on the tonic
             sAll (uncurry leapsRebound) leaps --all leaps should be followed by a step in the opposite direction
           ]
-
 
 main :: IO ()
 main = print =<< mphrase
