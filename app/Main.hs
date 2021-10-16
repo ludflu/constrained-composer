@@ -67,11 +67,12 @@ mphrase = sat $ do
         leapCount = numLeaps delta
         repeatCount = numRepeats delta
     constrain $ sAll isScaleDegree svars
-    constrain $ stepCount .>= 14
-    constrain $ leapCount .<= 2
-    constrain $ repeatCount .<= 1
-    constrain $ vfirst .== 1
-    solve [ (abs vfirst - abs vlast) .== 0 ]
+    solve [ stepCount .>= 14, --mostly steps
+            leapCount .<= 2 , --some leaps allowed
+            repeatCount .<= 1, --no more than 1 repeated note
+            vfirst .== 1,  --begin on the tonic
+            (abs vfirst - abs vlast) .== 0 --end on the tonic
+          ]
 
 
 main :: IO ()
