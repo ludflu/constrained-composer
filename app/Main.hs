@@ -28,8 +28,15 @@ makePairs = listsToPairs . (windows 2)
 absDiff :: SBV Integer -> SBV Integer -> SBV Integer
 absDiff a b = abs (a-b)
 
+
+--given a list of scale degrees, how many are steps (not leaps)
 numSteps :: SList Integer -> SBV Integer
 numSteps ss = let steps = bfilter 100 (\x -> (x .== 1)) ss
+               in L.length steps
+
+--given a list of scale degrees, how many are steps (not leaps)
+numLeaps :: SList Integer -> SBV Integer
+numLeaps ss = let steps = bfilter 100 (\x -> (x .> 1)) ss
                in L.length steps
 
 vnames :: [String]
@@ -49,9 +56,12 @@ mphrase = sat $ do
         _absDiff = uncurry absDiff
         pairs = makePairs svars
         steps = map _absDiff pairs
-        stepCount = numSteps (mkSList steps)
+        delta = mkSList steps
+        stepCount = numSteps delta
+        leapCount = numLeaps delta
     constrain $ sAll isScaleDegree svars
     constrain $ stepCount .>= 10
+    constrain $ leapCount .<= 2
     constrain $ vfirst .== 5
     solve [ (abs vfirst - abs vlast) .== 0 ]
 
