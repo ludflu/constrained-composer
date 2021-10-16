@@ -90,8 +90,8 @@ mphrase = sat $ do
             leapCount .<= 2 , --some leaps allowed
             repeatCount .<= 1, --no more than 1 repeated note
             vfirst .== 1,  --begin on the tonic
-            sAll (uncurry leapsRebound) leaps, 
-            (abs vfirst - abs vlast) .== 0 --end on the tonic
+            vlast .== 1,  --end on the tonic
+            sAll (uncurry leapsRebound) leaps --all leaps should be followed by a step in the opposite direction
           ]
 
 
