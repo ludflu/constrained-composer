@@ -10,59 +10,58 @@ import Data.Maybe
 import qualified Data.SBV.List as L
 import Data.SBV.Tools.BoundedList
 
+type SMInt = SBV Integer
+
 windows :: Int -> [a] -> [[a]]
 windows n xs = let wnds = map (take n) (tails xs)
-                in filter (\x -> (length x) == n) wnds
+                in filter (\x -> length x == n) wnds
 
 listToPair :: [x] -> Maybe(x,x)
-listToPair (_:[]) = Nothing
+listToPair [_] = Nothing
 listToPair [] = Nothing
 listToPair (l:ls) = Just (l, head ls)
 
 listsToPairs :: [[x]] -> [(x,x)]
-listsToPairs ls = catMaybes $ map listToPair ls
+listsToPairs = mapMaybe listToPair
 
 makePairs :: [x] -> [(x,x)]
-makePairs = listsToPairs . (windows 2)
+makePairs = listsToPairs . windows 2
 
-absDiff :: SBV Integer -> SBV Integer -> SBV Integer
+absDiff :: SMInt -> SMInt -> SMInt
 absDiff a b = abs (a-b)
 
-diff :: SBV Integer -> SBV Integer -> SBV Integer
+diff :: SMInt -> SMInt -> SMInt
 diff a b = a-b
 
 fromSBool :: SBool -> Bool
 fromSBool sFalse = False
 fromSBool sTrue = True
 
-onlyLeaps :: [(SBV Integer, SBV Integer)] -> [(SBV Integer, SBV Integer)]
-onlyLeaps dps = filter (\d -> fromSBool ( abs (fst d) .> 1)) dps
+onlyLeaps :: [(SMInt, SMInt)] -> [(SMInt, SMInt)]
+onlyLeaps = filter (\d -> fromSBool ( abs (fst d) .> 1))
 
 --leaps rebound with a step in the opposite direction
-leapsRebound :: SBV Integer -> SBV Integer -> SBool
+leapsRebound :: SMInt -> SMInt -> SBool
 leapsRebound a b = (signum a ./= signum b) .&& (abs b .==1)
 
 --given a list of scale degrees, how many are steps (not leaps)
-numSteps :: SList Integer -> SBV Integer
-numSteps ss = let steps = bfilter 100 (\x -> (x .== 1)) ss
+numSteps :: SList Integer -> SMInt
+numSteps ss = let steps = bfilter 100 ( .== 1) ss
                in L.length steps
 
 --given a list of scale degrees, how many are leaps, not steps
-numLeaps :: SList Integer -> SBV Integer
-numLeaps ss = let steps = bfilter 100 (\x -> (x .> 1)) ss
+numLeaps :: SList Integer -> SMInt
+numLeaps ss = let steps = bfilter 100 ( .> 1) ss
                in L.length steps
 
 --given a list of scale degrees, how many are repeated notes
-numRepeats :: SList Integer -> SBV Integer
-numRepeats ss = let steps = bfilter 100 (\x -> (x .== 0)) ss
+numRepeats :: SList Integer -> SMInt
+numRepeats ss = let steps = bfilter 100 ( .== 0) ss
                in L.length steps
 
 vnames :: [String]
 vnames = let vs = take 16 ['a'..]
           in map (\v -> [v]) vs
-
-mkSList :: [SBV Integer] -> SList Integer
-mkSList xs = L.implode xs
 
 mphrase :: IO AllSatResult
 mphrase = allSatWith defaultSMTCfg{allSatMaxModelCount = Just 10} $ do
@@ -76,7 +75,7 @@ mphrase = allSatWith defaultSMTCfg{allSatMaxModelCount = Just 10} $ do
         leaps = onlyLeaps deltaPairs
 
         pairs = makePairs svars
-        adelta = mkSList $ map (uncurry absDiff) pairs
+        adelta = L.implode $ map (uncurry absDiff) pairs
         stepCount = numSteps adelta
         leapCount = numLeaps adelta
         repeatCount = numRepeats adelta
