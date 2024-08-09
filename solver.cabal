@@ -29,7 +29,10 @@ executable solver
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.14.3.0,
-                      sbv ^>=8.10
+    build-depends:    base,
+                      sbv,
+                      sbv ^>=10.10,
+                      containers,
+                    --   HaskellForMaths
     hs-source-dirs:   app
     default-language: Haskell2010
