@@ -114,28 +114,34 @@ vnames =
 
 mphrase :: IO AllSatResult
 mphrase = allSatWith defaultSMTCfg {allSatMaxModelCount = Just 1} $ do
-  svars <- mapM sInteger vnames
+  counterpoint <- mapM sInteger vnames
+
   let isScaleDegree x = x .>= 1 .&& x .<= 7 --scale degrees  
-      vfirst = head svars
-      vlast = last svars
-      checkConsonance indx = isConsonantInterval (svars !! indx) (cantusFirmus !! indx)
+      vfirst = head counterpoint
+      vlast = last counterpoint
+      checkConsonance indx = isConsonantInterval (counterpoint !! indx) (cantusFirmus !! indx)
 
       consosnanceCheck = map checkConsonance [0 .. 14]
 
-      delta = map (uncurry diff) pairs
-      deltaPairs = makePairs delta
+      counterpointBigrams = makePairs counterpoint
+      counterPointMotion = map (uncurry diff) counterpointBigrams
+
+      givenBigrams = makePairs cantusFirmus
+      givenMotion = map (uncurry diff) givenBigrams
+
+
+      deltaPairs = makePairs counterPointMotion
       leaps = onlyLeaps deltaPairs
 
-      pairs = makePairs svars
-      bigramPairs = makePairs pairs
+      bigramPairs = makePairs counterpointBigrams
       bigramDiffs = map (uncurry pairDiff) bigramPairs
 
-      adelta = L.implode $ map (uncurry absDiff) pairs
+      adelta = L.implode $ map (uncurry absDiff) counterpointBigrams
       stepCount = numSteps adelta
       leapCount = numLeaps adelta
       repeatCount = numRepeats adelta
 
-  constrain $ sAll isScaleDegree svars
+  constrain $ sAll isScaleDegree counterpoint
   let s = [ stepCount .>= 12, --mostly steps
         leapCount .<= 4, --some leaps allowed
         repeatCount .== 0, --no repeated notes
