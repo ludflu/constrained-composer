@@ -115,12 +115,12 @@ vnames =
 mphrase :: IO AllSatResult
 mphrase = allSatWith defaultSMTCfg {allSatMaxModelCount = Just 1} $ do
   svars <- mapM sInteger vnames
-  let isScaleDegree x = x .>= 1 .&& x .<= 7 --scale degrees
-
-  
+  let isScaleDegree x = x .>= 1 .&& x .<= 7 --scale degrees  
       vfirst = head svars
       vlast = last svars
       checkConsonance indx = isConsonantInterval (svars !! indx) (cantusFirmus !! indx)
+
+      consosnanceCheck = map checkConsonance [0 .. 14]
 
       delta = map (uncurry diff) pairs
       deltaPairs = makePairs delta
@@ -136,29 +136,14 @@ mphrase = allSatWith defaultSMTCfg {allSatMaxModelCount = Just 1} $ do
       repeatCount = numRepeats adelta
 
   constrain $ sAll isScaleDegree svars
-  solve
-    [ stepCount .>= 12, --mostly steps
-      leapCount .<= 4, --some leaps allowed
-      repeatCount .== 0, --no repeated notes
-      vfirst .== vlast, --begin and end on the tonic
-      checkConsonance 0, --consonance with cantus firmus
-      checkConsonance 1, --consonance with cantus firmus
-      checkConsonance 2, --consonance with cantus firmus
-      checkConsonance 3, --consonance with cantus firmus
-      checkConsonance 4, --consonance with cantus firmus
-      checkConsonance 5, --consonance with cantus firmus
-      checkConsonance 6, --consonance with cantus firmus
-      checkConsonance 7, --consonance with cantus firmus
-      checkConsonance 8, --consonance with cantus firmus
-      checkConsonance 9, --consonance with cantus firmus
-      checkConsonance 10, --consonance with cantus firmus
-      checkConsonance 11, --consonance with cantus firmus
-      checkConsonance 12, --consonance with cantus firmus
-      checkConsonance 13, --consonance with cantus firmus
-      checkConsonance 14, --consonance with cantus firm 
-      sAll (.>= 1) bigramDiffs, --no repeated bigrams
-      sAll (uncurry leapsRebound) leaps --all leaps should be followed by a step in the opposite direction
-    ]
+  let s = [ stepCount .>= 12, --mostly steps
+        leapCount .<= 4, --some leaps allowed
+        repeatCount .== 0, --no repeated notes
+        vfirst .== vlast, --begin and end on the tonic
+        sAll (.>= 1) bigramDiffs, --no repeated bigrams
+        sAll (uncurry leapsRebound) leaps --all leaps should be followed by a step in the opposite direction
+          ] ++ consosnanceCheck
+   in solve s
 
 main :: IO ()
 main = print =<< mphrase
