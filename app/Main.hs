@@ -82,8 +82,9 @@ toSBool :: Bool -> SBool
 toSBool False = sFalse
 toSBool True = sTrue
 
+--if the absolute value of the first element is greater than 2 semitones, then it's a leap
 onlyLeaps :: [(SMInt, SMInt)] -> [(SMInt, SMInt)]
-onlyLeaps = filter (\d -> fromSBool (abs (fst d) .> 1))
+onlyLeaps = filter (\d -> fromSBool (abs (fst d) .> 2))   
 
 --leaps rebound with a step in the opposite direction
 leapsRebound :: SMInt -> SMInt -> SBool
@@ -92,13 +93,13 @@ leapsRebound a b = (signum a ./= signum b) .&& (abs b .== 1)
 --given a list of scale degrees, how many are steps (not leaps)
 numSteps :: SList Integer -> SMInt
 numSteps ss =
-  let steps = bfilter 100 (.== 1) ss
+  let steps = bfilter 100 (.<= 2) ss
    in L.length steps
 
 --given a list of scale degrees, how many are leaps, not steps
 numLeaps :: SList Integer -> SMInt
 numLeaps ss =
-  let steps = bfilter 100 (.> 1) ss
+  let steps = bfilter 100 (.> 2) ss
    in L.length steps
 
 --given a list of scale degrees, how many are repeated notes
